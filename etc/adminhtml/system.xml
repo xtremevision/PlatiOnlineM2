@@ -1,0 +1,64 @@
+<!--
+ PlatiOnline payment module
+
+ @category    Xtreme
+ @package     Xtreme_PlatiOnline
+ @author      Marian-Daniel Ursache <marian.ursache@gmail.com>, Michael Mussulis <michael@xtreme-vision.net>
+ @copyright   Xtreme Vision SRL
+ @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+
+ Module Backend Configuration
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="payment">
+            <group id="xtreme_plationline" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>PlatiOnline</label>
+                <comment>
+                    <![CDATA[<a href="http://plationline.ro/" target="_blank">Click here to sign up for PlatiOnline account</a>]]>
+                </comment>
+                <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="debug" translate="label" type="select" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Debug</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="test" translate="label" type="select" sortOrder="3" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Test</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="title" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Title</label>
+                </field>
+                <field id="login_id" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Login ID</label>
+                </field>
+                <field id="rsa_public_auth" translate="label" type="textarea" sortOrder="7" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>RSA Public AUTH</label>
+                </field>
+                <field id="iv_auth" translate="label" type="text" sortOrder="9" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>IV Auth</label>
+                </field>
+                <field id="rsa_private_itsn" translate="label" type="textarea" sortOrder="8" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>RSA Private ITSN</label>
+                </field>
+                <field id="iv_itsn" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>IV ITSN</label>
+                </field>
+                <field id="relay_method" translate="label" type="select" sortOrder="11" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Relay Method</label>
+                    <source_model>Xtreme\PlatiOnline\Model\Config\RelayMethods</source_model>
+                </field>
+                <field id="payment_timeout" translate="label" type="text" sortOrder="12" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Payment Timeout</label>
+                </field>
+                <field id="send_sms" translate="label" type="select" sortOrder="13" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Send customer SMS notifications</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

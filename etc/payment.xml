@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!--
+ PlatiOnline payment module
+
+ @category    Xtreme
+ @package     Xtreme_PlatiOnline
+ @author      Marian-Daniel Ursache <marian.ursache@gmail.com>, Michael Mussulis <michael@xtreme-vision.net>
+ @copyright   Xtreme Vision SRL
+ @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+
+ Payment Config
+-->
+<payment xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Payment:etc/payment.xsd">
+    <methods>
+        <method name="xtreme_plationline">
+            <allow_multiple_address>1</allow_multiple_address>
+        </method>
+    </methods>
+</payment>
