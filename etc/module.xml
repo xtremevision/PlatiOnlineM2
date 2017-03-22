@@ -1,0 +1,21 @@
+<!--
+ PlatiOnline payment module
+
+ @category    Xtreme
+ @package     Xtreme_PlatiOnline
+ @author      Marian-Daniel Ursache <marian.ursache@gmail.com>, Michael Mussulis <michael@xtreme-vision.net>
+ @copyright   Xtreme Vision SRL
+ @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+
+ Module Config
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
+    <module name="Xtreme_PlatiOnline" setup_version="0.1.0">
+        <sequence>
+            <module name="Magento_Sales" />
+            <module name="Magento_Payment" />
+            <module name="Magento_Directory" />
+            <module name="Magento_Config" />
+        </sequence>
+    </module>
+</config>
