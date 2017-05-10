@@ -71,6 +71,7 @@
 namespace Xtreme\PlatiOnline\Helper\Crypt;
 
 use \Xtreme\PlatiOnline\Helper\Math\BigInteger;
+use \Magento\Framework\Exception\LocalizedException;
 
 /**
  * Include Crypt_Random
