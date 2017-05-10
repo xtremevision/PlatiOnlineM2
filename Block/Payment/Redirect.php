@@ -9,7 +9,7 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  *
  * Redirect Action Block
-*/
+ */
 
 namespace Xtreme\PlatiOnline\Block\Payment;
 
@@ -23,6 +23,6 @@ class Redirect extends BaseBlock
      */
     public function getRedirectUrl()
     {
-        return $this->_paymentApi->getLastRedirect();
+        return $this->paymentApi->getLastRedirect();
     }
 }

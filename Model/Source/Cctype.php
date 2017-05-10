@@ -9,7 +9,7 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  *
  * CCType Model
-*/
+ */
 
 namespace Xtreme\PlatiOnline\Model\Source;
 
@@ -20,6 +20,6 @@ class Cctype extends \Magento\Payment\Model\Source\Cctype
      */
     public function getAllowedTypes()
     {
-        return array('VI', 'MC', 'AE', 'DI', 'JCB', 'OT');
+        return ['VI', 'MC', 'AE', 'DI', 'JCB', 'OT'];
     }
 }

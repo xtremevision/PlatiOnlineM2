@@ -9,7 +9,7 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  *
  * Failure Action
-*/
+ */
 namespace Xtreme\PlatiOnline\Controller\Payment;
 
 class Failure extends \Magento\Framework\App\Action\Action
@@ -43,7 +43,7 @@ class Failure extends \Magento\Framework\App\Action\Action
      * @param \Magento\Framework\View\Result\PageFactory $resultPageFactory
      */
     public function __construct(
-       \Magento\Framework\App\Action\Context $context,
+        \Magento\Framework\App\Action\Context $context,
         \Magento\Framework\App\Cache\TypeListInterface $cacheTypeList,
         \Magento\Framework\App\Cache\StateInterface $cacheState,
         \Magento\Framework\App\Cache\Frontend\Pool $cacheFrontendPool,

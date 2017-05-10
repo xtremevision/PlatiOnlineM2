@@ -9,10 +9,12 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  *
  * Payment Model
-*/
+ */
 
 namespace Xtreme\PlatiOnline\Model;
+
 use \Magento\Payment\Model\Method\AbstractMethod as PaymentAbstractMethod;
+use \Magento\Framework\Exception\LocalizedException;
 
 class Payment extends PaymentAbstractMethod
 {
@@ -61,22 +63,21 @@ class Payment extends PaymentAbstractMethod
     const RELAY_SOAP_PO_PAGE = 'SOAP_PO_PAGE';
     const RELAY_SOAP_MT_PAGE = 'SOAP_MT_PAGE';
 
-    protected $_platiOnlineApi = false;
+    private $platiOnlineApi = false;
 
-    protected $_countryFactory;
+    private $countryFactory;
 
-    protected $_minAmount = null;
-    protected $_maxAmount = null;
-    protected $_supportedCurrencyCodes = array('USD', 'RON');
-    protected $_storeManager;
-    protected $_localeResolver;
-    protected $_checkoutSession;
-    protected $_logger;
-    protected $_orderFactory;
-    protected $_orderService;
-    protected $_orderSender;
+    private $minAmount = null;
+    private $maxAmount = null;
+    private $supportedCurrencyCodes = ['USD', 'RON'];
+    private $storeManager;
+    private $localeResolver;
+    private $checkoutSession;
+    private $orderFactory;
+    private $orderService;
+    private $orderSender;
 
-    protected $_debugReplacePrivateDataKeys = ['number', 'exp_month', 'exp_year', 'cvc'];
+    private $debugReplacePrivateDataKeys = ['number', 'exp_month', 'exp_year', 'cvc'];
 
     public function __construct(
         \Magento\Framework\Model\Context $context,
@@ -94,7 +95,7 @@ class Payment extends PaymentAbstractMethod
         \Magento\Sales\Model\Service\OrderService $orderService,
         \Magento\Sales\Model\Order\Email\Sender\OrderSender $orderSender,
         \Xtreme\PlatiOnline\Helper\PO5 $platiOnline,
-        array $data = array()
+        array $data = []
     ) {
         parent::__construct(
             $context,
@@ -109,23 +110,16 @@ class Payment extends PaymentAbstractMethod
             $data
         );
 
-        $this->_storeManager = $storeManager;
-        $this->_localeResolver = $locale;
-        $this->_countryFactory = $countryFactory;
-        $this->_checkoutSession = $checkoutSession;
-        $this->_platiOnlineApi = $platiOnline;
-        $this->_logger = $logger;
-        $this->_orderFactory = $orderFactory;
-        $this->_orderService = $orderService;
-        $this->_orderSender = $orderSender;
-
-/*        $this->_stripeApi->setApiKey(
-            $this->getConfigData('api_key')
-        );
-
-        $this->_minAmount = $this->getConfigData('min_order_total');
-        $this->_maxAmount = $this->getConfigData('max_order_total');
-*/    }
+        $this->storeManager = $storeManager;
+        $this->localeResolver = $locale;
+        $this->countryFactory = $countryFactory;
+        $this->checkoutSession = $checkoutSession;
+        $this->platiOnlineApi = $platiOnline;
+        $this->logger = $logger;
+        $this->orderFactory = $orderFactory;
+        $this->orderService = $orderService;
+        $this->orderSender = $orderSender;
+    }
 
     /**
      * Payment capture
@@ -139,18 +133,21 @@ class Payment extends PaymentAbstractMethod
     {
         /** @var \Magento\Sales\Model\Order $order */
         $order = $payment->getOrder();
-        $this->_checkoutSession->setData('PO_REDIRECT_URL', '');
+        $this->checkoutSession->setData('PO_REDIRECT_URL', '');
         $request = $this->getPostData($order);
 
         try {
             $response = $this->callApi($request);
+            $this->logger->debug($response, null, true);
             if (!$response) {
-                throw new \Exception('Invalid response from payment server');
+                throw new LocalizedException(
+                    new \Magento\Framework\Phrase('Invalid response from payment server')
+                );
             }
 
-            $this->_checkoutSession->setData('PO_REDIRECT_URL', $response['PO_REDIRECT_URL']);
+            $this->checkoutSession->setData('PO_REDIRECT_URL', $response['PO_REDIRECT_URL']);
         } catch (\Exception $e) {
-            $this->_logger->debug(['request' => $request, 'exception' => $e->getMessage()], null, true);
+            $this->logger->debug(['request' => $request, 'exception' => $e->getMessage()], null, true);
             throw new \Magento\Framework\Validator\Exception(__('Payment capturing error.' . $e->getMessage()));
         }
 
@@ -159,7 +156,7 @@ class Payment extends PaymentAbstractMethod
 
     protected function getImage()
     {
-        return $this->_storeManager->getBaseStaticDir() . "images/plationline_logo.jpg";
+        return $this->storeManager->getBaseStaticDir() . "images/plationline_logo.jpg";
     }
 
     /**
@@ -183,10 +180,15 @@ class Payment extends PaymentAbstractMethod
         try {
             $response = $this->callApi($request, self::PO_REFUND_ACTION, 'refund');
 
-            $this->_logger->debug($response, null, true);
+            $this->logger->debug($response, null, true);
             if ($response_refund['PO_REFUND_RESPONSE']['PO_ERROR_CODE'] == 1) {
-                $this->_logger->debug($response, null, true);
-                throw new \Exception("Error on refunding action: " . $response_refund['PO_REFUND_RESPONSE']['PO_ERROR_REASON']);
+                $this->logger->debug($response, null, true);
+                throw new LocalizedException(
+                    new \Magento\Framework\Phrase(
+                        "Error on refunding action: "
+                        . $response_refund['PO_REFUND_RESPONSE']['PO_ERROR_REASON']
+                    )
+                );
             }
 
             switch ($response['PO_REFUND_RESPONSE']['X_RESPONSE_CODE']) {
@@ -197,13 +199,13 @@ class Payment extends PaymentAbstractMethod
                     );
                     break;
                 case '10':
-                    throw new \Exception(__('Errors occured, transaction ' . $transid . ' NOT REFUNDED'));
-                    break;
+                    throw new LocalizedException(
+                        new \Magento\Framework\Phrase('Errors occured, transaction ' . $transid . ' NOT REFUNDED')
+                    );
             }
-
-        } catch (\Exception $e) {
+        } catch (LocalizedException $e) {
             $this->debugData(['transaction_id' => $transactionId, 'exception' => $e->getMessage()]);
-            $this->_logger->error(__('Payment refunding error.'));
+            $this->logger->error(__('Payment refunding error.'));
             throw new \Magento\Framework\Validator\Exception(__('Payment refunding error.'));
         }
 
@@ -222,9 +224,11 @@ class Payment extends PaymentAbstractMethod
      */
     public function getLastRedirect()
     {
-        $redirectUrl = $this->_checkoutSession->getData('PO_REDIRECT_URL');
+        $redirectUrl = $this->checkoutSession->getData('PO_REDIRECT_URL');
         if (empty($redirectUrl)) {
-            throw new \Exception('Can not redirect to payment gateway.');
+            throw new LocalizedException(
+                new \Magento\Framework\Phrase('Can not redirect to payment gateway.')
+            );
         }
 
         return $redirectUrl;
@@ -239,15 +243,18 @@ class Payment extends PaymentAbstractMethod
     public function getPostData(\Magento\Sales\Model\Order $order)
     {
         if (empty($order)) {
-            throw new \Exception('Invalid quote data');
+            throw new LocalizedException(
+                new \Magento\Framework\Phrase('Invalid quote data')
+            );
         }
 
         $f_request = [
             'f_order_number' => $order->getIncrementId(),
             'f_amount' => number_format($order->getBaseGrandTotal(), 2, '.', ''),
-            'f_currency' => $this->_storeManager->getStore()->getCurrentCurrency()->getCode(),
-            'f_auth_minutes' => $this->getConfigData('payment_timeout'), // 0 - waiting forever, 20 - default (in minutes)
-            'f_language' => substr($this->_localeResolver->getDefaultLocale(), 0, 2),
+            'f_currency' => $this->storeManager->getStore()->getCurrentCurrency()->getCode(),
+            'f_auth_minutes' => $this->getConfigData('payment_timeout'),
+                // 0 - waiting forever, 20 - default (in minutes)
+            'f_language' => substr($this->localeResolver->getDefaultLocale(), 0, 2),
             'customer_info' => $this->getAddressData(
                 $order->getBillingAddress()
             ),
@@ -255,7 +262,7 @@ class Payment extends PaymentAbstractMethod
                 'same_info_as' => 0 // 0 - different info, 1- same info as customer_info
             ],
             'transaction_relay_response' => [
-                'f_relay_response_url' => $this->_storeManager->getStore()->getBaseUrl() . "plationline/payment/success",
+                'f_relay_response_url' => $this->storeManager->getStore()->getBaseUrl() . "plationline/payment/success",
                 // PTOR, POST_S2S_PO_PAGE, POST_S2S_MT_PAGE, SOAP_PO_PAGE, SOAP_MT_PAGE
                 'f_relay_method' => $this->getConfigData('relay_method'),
                  // Valoarea = 1 (default value)
@@ -265,7 +272,7 @@ class Payment extends PaymentAbstractMethod
                 'f_relay_handshake' => 1
             ],
             'f_order_cart' => [],
-            'f_order_string' => 'Comanda nr. ' . $order->getIncrementId() . ' pe site-ul ' . $this->_storeManager->getStore()->getBaseUrl(),
+            'f_order_string' => 'Comanda nr. ' . $order->getIncrementId() . ' pe site-ul ' . $this->storeManager->getStore()->getBaseUrl(),
             'shipping_info' => ['same_info_as' => '1'],
         ];
 
@@ -273,7 +280,7 @@ class Payment extends PaymentAbstractMethod
         // shipping address
         if (isset($shipping) && !empty($shipping)) {
             // same info ass has to be first or else xml does not verify
-            $f_request['shipping_info'] = array_merge(array('same_info_as' => 0), $this->getAddressData(
+            $f_request['shipping_info'] = array_merge(['same_info_as' => 0], $this->getAddressData(
                 $shipping,
                 'address'
             ));
@@ -355,7 +362,7 @@ class Payment extends PaymentAbstractMethod
             ],
             $addressName => [
                 'f_zip' => $address->getPostcode(),
-                'f_country' => $this->_countryFactory->create()->loadByCode($address->getCountryId())->getName(),
+                'f_country' => $this->countryFactory->create()->loadByCode($address->getCountryId())->getName(),
                 'f_state' => $address->getRegion(),
                 'f_city' => $address->getCity(),
                 'f_address' => str_replace("\n", ' ', join(', ', $address->getStreet())),
@@ -380,7 +387,7 @@ class Payment extends PaymentAbstractMethod
      */
     public function processItsn(array $parameters)
     {
-        $this->_logger->debug($parameters, null, true);
+        $this->logger->debug($parameters, null, true);
 
         $itsnMessage = $this->decryptItsnResponse($parameters);
         $success = $this->query(
@@ -401,10 +408,10 @@ class Payment extends PaymentAbstractMethod
      */
     public function decryptItsnResponse(array $parameters)
     {
-        $this->_platiOnlineApi->setRSAKeyDecrypt($this->getConfigData('rsa_private_itsn'));
-        $this->_platiOnlineApi->setIVITSN($this->getConfigData('iv_itsn'));
+        $this->platiOnlineApi->setRSAKeyDecrypt($this->getConfigData('rsa_private_itsn'));
+        $this->platiOnlineApi->setIVITSN($this->getConfigData('iv_itsn'));
 
-        return $this->_platiOnlineApi->itsn(
+        return $this->platiOnlineApi->itsn(
             $parameters['f_itsn_message'],
             $parameters['f_crypt_message']
         );
@@ -414,17 +421,17 @@ class Payment extends PaymentAbstractMethod
     {
         if (in_array($this->getConfigData('relay_method'), ['SOAP_PO_PAGE', 'SOAP_MT_PAGE'])) {
             $soap = file_get_contents("php://input");
-            $soapResponse = $this->_platiOnlineApi->parse_soap_response($soap);
+            $soapResponse = $this->platiOnlineApi->parse_soap_response($soap);
             $parameters = [
                 'F_Relay_Message' => $soapResponse['PO_RELAY_REPONSE']['F_RELAY_MESSAGE'],
                 'F_Crypt_Message' => $soapResponse['PO_RELAY_REPONSE']['F_CRYPT_MESSAGE']
             ];
         }
 
-        $this->_logger->debug($parameters, null, true);
+        $this->logger->debug($parameters, null, true);
 
         $authorizationResponse = $this->decryptResponse($parameters);
-        $this->_logger->debug($authorizationResponse, null, true);
+        $this->logger->debug($authorizationResponse, null, true);
         // we lie, there is no query
         $success = $this->processQuery([
             'PO_QUERY_RESPONSE' => [
@@ -453,10 +460,10 @@ class Payment extends PaymentAbstractMethod
 
     private function decryptResponse(array $parameters)
     {
-        $this->_platiOnlineApi->setRSAKeyDecrypt($this->getConfigData('rsa_private_itsn'));
-        $this->_platiOnlineApi->setIVITSN($this->getConfigData('iv_itsn'));
+        $this->platiOnlineApi->setRSAKeyDecrypt($this->getConfigData('rsa_private_itsn'));
+        $this->platiOnlineApi->setIVITSN($this->getConfigData('iv_itsn'));
 
-        return $this->_platiOnlineApi->auth_response(
+        return $this->platiOnlineApi->auth_response(
             $parameters['F_Relay_Message'],
             $parameters['F_Crypt_Message']
         );
@@ -486,17 +493,17 @@ class Payment extends PaymentAbstractMethod
      */
     protected function callApi(array $request, $action = self::PO_AUTHORIZE_ACTION, $function = 'auth')
     {
-        $this->_platiOnlineApi->f_login = $this->getConfigData('login_id');
+        $this->platiOnlineApi->f_login = $this->getConfigData('login_id');
         $request['f_website'] = str_ireplace('www.', '', $_SERVER['SERVER_NAME']);
 
-        $this->_platiOnlineApi->setRSAKeyEncrypt($this->getConfigData('rsa_public_auth'));
-        $this->_platiOnlineApi->setIV($this->getConfigData('iv_auth'));
+        $this->platiOnlineApi->setRSAKeyEncrypt($this->getConfigData('rsa_public_auth'));
+        $this->platiOnlineApi->setIV($this->getConfigData('iv_auth'));
 
         // test mode: 0 - disabled, 1 - enabled
-        $this->_platiOnlineApi->test_mode = $this->getConfigData('test');
+        $this->platiOnlineApi->test_mode = $this->getConfigData('test');
 
         //plationline autorizare
-        $response = $this->_platiOnlineApi->$function($request, $action);
+        $response = $this->platiOnlineApi->$function($request, $action);
 
         return $response;
     }
@@ -512,12 +519,12 @@ class Payment extends PaymentAbstractMethod
             return false;
         }
 
-        $order = $this->_orderFactory->create()->loadByIncrementId($response['PO_QUERY_RESPONSE']['ORDER']['F_ORDER_NUMBER']);
+        $order = $this->orderFactory->create()->loadByIncrementId($response['PO_QUERY_RESPONSE']['ORDER']['F_ORDER_NUMBER']);
         $statusCode = $response['PO_QUERY_RESPONSE']['ORDER']['TRANZACTION']['STATUS_FIN1']['CODE'];
 
         if ($statusCode == self::PO_AUTHORIZED) {
             if ($order->getState() != \Magento\Sales\Model\Order::STATE_PROCESSING) {
-                $this->_orderSender->send($order);
+                $this->orderSender->send($order);
                 $order->setAuthorized(true);
                 $order->save();
             }

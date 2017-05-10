@@ -12,7 +12,7 @@
 /*browser:true*/
 /*global define*/
 define(
-[
+    [
     'jquery',
     'Magento_Checkout/js/view/payment/default',
     'Magento_Checkout/js/action/place-order',
@@ -21,16 +21,17 @@ define(
     'Magento_Checkout/js/checkout-data',
     'Magento_Checkout/js/model/payment/additional-validators',
     'mage/url',
-],
-function (
-    $,
-    Component,
-    placeOrderAction,
-    selectPaymentMethodAction,
-    customer,
-    checkoutData,
-    additionalValidators,
-    url) {
+    ],
+    function (
+        $,
+        Component,
+        placeOrderAction,
+        selectPaymentMethodAction,
+        customer,
+        checkoutData,
+        additionalValidators,
+        url
+    ) {
         'use strict';
 
         return Component.extend({
@@ -61,7 +62,7 @@ function (
                 return false;
             },
 
-            selectPaymentMethod: function() {
+            selectPaymentMethod: function () {
                 selectPaymentMethodAction(this.getData());
                 checkoutData.setSelectedPaymentMethod(this.item.method);
                 return true;
@@ -72,7 +73,7 @@ function (
                  window.location.replace(url.build('plationline/payment/redirect/'));
             },
             /** Returns send check to info */
-            getImage: function() {
+            getImage: function () {
                 return window.checkoutConfig.payment.platiOnline.logo;
             },
             getInstructions() {

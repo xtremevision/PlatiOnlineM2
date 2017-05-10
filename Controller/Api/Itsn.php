@@ -18,32 +18,32 @@ class Itsn extends \Magento\Framework\App\Action\Action
     /**
      * @var \Magento\Framework\App\Cache\TypeListInterface
      */
-    protected $_cacheTypeList;
+    private $cacheTypeList;
 
     /**
      * @var \Magento\Framework\App\Cache\StateInterface
      */
-    protected $_cacheState;
+    private $cacheState;
 
     /**
      * @var \Magento\Framework\App\Cache\Frontend\Pool
      */
-    protected $_cacheFrontendPool;
+    private $cacheFrontendPool;
 
     /**
      * @var \Magento\Framework\View\Result\PageFactory
      */
-    protected $_resultPageFactory;
+    private $resultPageFactory;
 
     /**
      * @var \Magento\Framework\App\Request\Http
      */
-    protected $_request;
+    private $request;
 
     /**
      * @var \Xtreme\PlatiOnline\Model\Payment
      */
-    protected $_paymentApi;
+    private $paymentApi;
 
     /**
      * @param \Magento\Framework\App\Action\Context $context
@@ -55,7 +55,6 @@ class Itsn extends \Magento\Framework\App\Action\Action
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
-        \Magento\Framework\App\Request\Http $request,
         \Magento\Framework\App\Cache\TypeListInterface $cacheTypeList,
         \Magento\Framework\App\Cache\StateInterface $cacheState,
         \Magento\Framework\App\Cache\Frontend\Pool $cacheFrontendPool,
@@ -63,12 +62,11 @@ class Itsn extends \Magento\Framework\App\Action\Action
         \Xtreme\PlatiOnline\Model\Payment $payment
     ) {
         parent::__construct($context);
-        $this->_cacheTypeList = $cacheTypeList;
-        $this->_cacheState = $cacheState;
-        $this->_cacheFrontendPool = $cacheFrontendPool;
-        $this->_resultPageFactory = $resultPageFactory;
-        $this->_request = $request;
-        $this->_paymentApi = $payment;
+        $this->cacheTypeList = $cacheTypeList;
+        $this->cacheState = $cacheState;
+        $this->cacheFrontendPool = $cacheFrontendPool;
+        $this->resultPageFactory = $resultPageFactory;
+        $this->paymentApi = $payment;
     }
 
     /**
@@ -77,7 +75,7 @@ class Itsn extends \Magento\Framework\App\Action\Action
      */
     public function execute()
     {
-        $response = $this->_paymentApi->processItsn($this->getRequest()->getParams());
+        $response = $this->paymentApi->processItsn($this->getRequest()->getParams());
         $raspuns_xml = '<?xml version="1.0" encoding="UTF-8" ?>';
         $raspuns_xml .= '<itsn>';
         $raspuns_xml .= '<x_trans_id>' . $response['transactionId'] . '</x_trans_id>';
@@ -85,8 +83,6 @@ class Itsn extends \Magento\Framework\App\Action\Action
         $raspuns_xml .= '<f_response_code>' . ($response['success'] ? 1 : 0) . '</f_response_code>';
         $raspuns_xml .= '</itsn>';
 
-        echo $raspuns_xml;
-
-        return false;
+        $this->getResponse()->setBody($raspuns_xml);
     }
 }
