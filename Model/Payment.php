@@ -390,14 +390,17 @@ class Payment extends PaymentAbstractMethod
         $this->logger->debug($parameters, null, true);
 
         $itsnMessage = $this->decryptItsnResponse($parameters);
+        $keys = array_keys($itsnMessage);
+        $itsnMessage = $itsnMessage[$keys[0]];
+
         $success = $this->query(
-            $itsnMessage['PO_ITSN']['F_ORDER_NUMBER'],
-            $itsnMessage['PO_ITSN']['X_TRANS_ID']
+            $itsnMessage['F_ORDER_NUMBER'],
+            $itsnMessage['X_TRANS_ID']
         );
 
         return [
             'success' => $success,
-            'transactionId' => $itsnMessage['PO_ITSN']['X_TRANS_ID']
+            'transactionId' => $itsnMessage['X_TRANS_ID']
         ];
     }
 
