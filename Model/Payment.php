@@ -518,12 +518,15 @@ class Payment extends PaymentAbstractMethod
      */
     public function processQuery($response)
     {
-        if ($response['PO_QUERY_RESPONSE']['PO_ERROR_CODE'] != 0) {
+        $keys = array_keys($response);
+        $responseData = $response[$keys[0]];
+
+        if ($responseData['PO_ERROR_CODE'] != 0) {
             return false;
         }
 
-        $order = $this->orderFactory->create()->loadByIncrementId($response['PO_QUERY_RESPONSE']['ORDER']['F_ORDER_NUMBER']);
-        $statusCode = $response['PO_QUERY_RESPONSE']['ORDER']['TRANZACTION']['STATUS_FIN1']['CODE'];
+        $order = $this->orderFactory->create()->loadByIncrementId($responseData['ORDER']['F_ORDER_NUMBER']);
+        $statusCode = $responseData['ORDER']['TRANZACTION']['STATUS_FIN1']['CODE'];
 
         if ($statusCode == self::PO_AUTHORIZED) {
             if ($order->getState() != \Magento\Sales\Model\Order::STATE_PROCESSING) {
@@ -551,9 +554,12 @@ class Payment extends PaymentAbstractMethod
      */
     public function saveTransaction(\Magento\Sales\Model\Order $order, $response, $closed = true)
     {
-        $transactionId = $response['PO_QUERY_RESPONSE']['ORDER']['TRANZACTION']['X_TRANS_ID'];
-        $state = $response['PO_QUERY_RESPONSE']['ORDER']['TRANZACTION']['STATUS_FIN1']['CODE'];
-        $creditState = $state == self::PO_CREDIT ? $response['PO_QUERY_RESPONSE']['ORDER']['TRANZACTION']['STATUS_FIN2']['CODE'] : null;
+        $keys = array_keys($response);
+        $responseData = $response[$keys[0]];
+
+        $transactionId = $responseData['ORDER']['TRANZACTION']['X_TRANS_ID'];
+        $state = $responseData['ORDER']['TRANZACTION']['STATUS_FIN1']['CODE'];
+        $creditState = $state == self::PO_CREDIT ? $responseData['ORDER']['TRANZACTION']['STATUS_FIN2']['CODE'] : null;
 
         // prepare payment transaction
         $payment = $order->getPayment();
