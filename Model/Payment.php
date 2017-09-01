@@ -434,17 +434,20 @@ class Payment extends PaymentAbstractMethod
         $this->logger->debug($parameters, null, true);
 
         $authorizationResponse = $this->decryptResponse($parameters);
+        $authData = isset($authorizationResponse['PO_AUTH_URL_RESPONSE'])
+            ? $authorizationResponse['PO_AUTH_URL_RESPONSE']
+            : $authorizationResponse['PO_AUTH_RESPONSE'];
         $this->logger->debug($authorizationResponse, null, true);
         // we lie, there is no query
         $success = $this->processQuery([
             'PO_QUERY_RESPONSE' => [
                 'PO_ERROR_CODE' => 0,
                 'ORDER' => [
-                    'F_ORDER_NUMBER' => $authorizationResponse['PO_AUTH_RESPONSE']['F_ORDER_NUMBER'],
+                    'F_ORDER_NUMBER' => $authData['F_ORDER_NUMBER'],
                     'TRANZACTION' => [
-                        'X_TRANS_ID' => $authorizationResponse['PO_AUTH_RESPONSE']['X_TRANS_ID'],
+                        'X_TRANS_ID' => $authData['X_TRANS_ID'],
                         'STATUS_FIN1' => [
-                            'CODE' => $authorizationResponse['PO_AUTH_RESPONSE']['X_RESPONSE_CODE'],
+                            'CODE' => $authData['X_RESPONSE_CODE'],
                         ],
                         'STATUS_FIN2' => [
                             'CODE' => '-',
@@ -455,9 +458,9 @@ class Payment extends PaymentAbstractMethod
         ]);
 
         return [
-            'success' => $authorizationResponse['PO_AUTH_RESPONSE']['X_RESPONSE_CODE'] != self::PO_AUTH_REFUSED,
-            'transactionId' => $authorizationResponse['PO_AUTH_RESPONSE']['X_TRANS_ID'],
-            'transactionText' => $this->getPOUserText($authorizationResponse['PO_AUTH_RESPONSE']['X_RESPONSE_CODE'])
+            'success' => $authData['X_RESPONSE_CODE'] != self::PO_AUTH_REFUSED,
+            'transactionId' => $authData['X_TRANS_ID'],
+            'transactionText' => $this->getPOUserText($authData['X_RESPONSE_CODE'])
         ];
     }
 

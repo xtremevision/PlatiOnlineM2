@@ -904,7 +904,10 @@ class BigInteger
 
         $carry = 0;
         for ($i = 0, $j = 1; $j < $size; $i+=2, $j+=2) {
-            $sum = (isset($x_value[$j]) ? $x_value[$j] : 0) * MATH_BIGINTEGER_BASE_FULL + (isset($x_value[$i]) ? $x_value[$i] : 0) + (isset($y_value[$j]) ? $y_value[$j] : 0) * MATH_BIGINTEGER_BASE_FULL + (isset
+            $sum = (isset($x_value[$j]) ? $x_value[$j] : 0) * MATH_BIGINTEGER_BASE_FULL
+                + (isset($x_value[$i]) ? $x_value[$i] : 0)
+                + (isset($y_value[$j]) ? $y_value[$j] : 0) * MATH_BIGINTEGER_BASE_FULL
+                + (isset($y_value[$i]) ? $y_value[$i] : 0);
             $carry = $sum >= MATH_BIGINTEGER_MAX_DIGIT2; // eg. floor($sum / 2**52); only possible values (in any base) are 0 and 1
             $sum = $carry ? $sum - MATH_BIGINTEGER_MAX_DIGIT2 : $sum;
 
