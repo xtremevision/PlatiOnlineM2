@@ -51,15 +51,17 @@ class PO5
             $errors[] = '<b>SOAP extension active</b> is needed to use this <b>PlatiOnline</b> kit. The SOAP extension is currently <b>DISABLED!</b>';
         }
 
+        $errorsText = '';
         if (isset($errors) && !empty($errors)) {
             //daca avem erori
-            $errors = '';
-            foreach ($errors as $error) {
-                $errors .= $error . "<hr />";
+            if (is_array($errors)) {
+                foreach ($errors as $error) {
+                    $errorsText .= $error . "<hr />";
+                }
             }
 
             throw new LocalizedException(
-                new \Magento\Framework\Phrase($errors . 'Please fix the above mentioned errors to use this PlatiOnline kit')
+                new \Magento\Framework\Phrase($errorsText . 'Please fix the above mentioned errors to use this PlatiOnline kit')
             );
         }
     }

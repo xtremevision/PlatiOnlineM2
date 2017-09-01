@@ -904,7 +904,7 @@ class BigInteger
 
         $carry = 0;
         for ($i = 0, $j = 1; $j < $size; $i+=2, $j+=2) {
-            $sum = $x_value[$j] * MATH_BIGINTEGER_BASE_FULL + $x_value[$i] + $y_value[$j] * MATH_BIGINTEGER_BASE_FULL + $y_value[$i] + $carry;
+            $sum = (isset($x_value[$j]) ? $x_value[$j] : 0) * MATH_BIGINTEGER_BASE_FULL + (isset($x_value[$i]) ? $x_value[$i] : 0) + (isset($y_value[$j]) ? $y_value[$j] : 0) * MATH_BIGINTEGER_BASE_FULL + (isset
             $carry = $sum >= MATH_BIGINTEGER_MAX_DIGIT2; // eg. floor($sum / 2**52); only possible values (in any base) are 0 and 1
             $sum = $carry ? $sum - MATH_BIGINTEGER_MAX_DIGIT2 : $sum;
 
@@ -915,14 +915,17 @@ class BigInteger
         }
 
         if ($j == $size) { // ie. if $y_size is odd
-            $sum = $x_value[$i] + $y_value[$i] + $carry;
+            $sum = (isset($x_value[$i]) ? $x_value[$i] : 0) + (isset($y_value[$i]) ? $y_value[$i] : 0) + $carry;
             $carry = $sum >= MATH_BIGINTEGER_BASE_FULL;
             $value[$i] = $carry ? $sum - MATH_BIGINTEGER_BASE_FULL : $sum;
             ++$i; // ie. let $i = $j since we've just done $value[$i]
         }
 
         if ($carry) {
-            for (; $value[$i] == MATH_BIGINTEGER_MAX_DIGIT; ++$i) {
+            for (; isset($value[$i]) && $value[$i] == MATH_BIGINTEGER_MAX_DIGIT; ++$i) {
+                $value[$i] = 0;
+            }
+            if (!isset($value[$i])) {
                 $value[$i] = 0;
             }
             ++$value[$i];
@@ -1051,14 +1054,17 @@ class BigInteger
         }
 
         if ($j == $y_size) { // ie. if $y_size is odd
-            $sum = $x_value[$i] - $y_value[$i] - $carry;
+            $sum = (isset($x_value[$i]) ? $x_value[$i] : 0) - (isset($y_value[$i]) ? $y_value[$i] : 0) - $carry;
             $carry = $sum < 0;
             $x_value[$i] = $carry ? $sum + MATH_BIGINTEGER_BASE_FULL : $sum;
             ++$i;
         }
 
         if ($carry) {
-            for (; !$x_value[$i]; ++$i) {
+//            for (; !isset($x_value[$i]) || !$x_value[$i]; ++$i) {
+//                $x_value[$i] = MATH_BIGINTEGER_MAX_DIGIT;
+//            }
+            if (!isset($x_value[$i])) {
                 $x_value[$i] = MATH_BIGINTEGER_MAX_DIGIT;
             }
             --$x_value[$i];
@@ -2421,7 +2427,6 @@ class BigInteger
             $temp = $temp->modInverse($n);
             return $this->_normalize($n->subtract($temp));
         }
-
         extract($this->extendedGCD($n));
 
         if (!$gcd->equals($one)) {
@@ -2682,8 +2687,8 @@ class BigInteger
         $y_value = array_pad($y_value, $size, 0);
 
         for ($i = count($x_value) - 1; $i >= 0; --$i) {
-            if ($x_value[$i] != $y_value[$i]) {
-                return ( $x_value[$i] > $y_value[$i] ) ? $result : -$result;
+            if ((isset($x_value[$i]) ? $x_value[$i] : 0) != (isset($y_value[$i]) ? $y_value[$i] : 0)) {
+                return ( (isset($x_value[$i]) ? $x_value[$i] : 0) > (isset($y_value[$i]) ? $y_value[$i] : 0) ) ? $result : -$result;
             }
         }
 
@@ -3434,7 +3439,7 @@ class BigInteger
         $carry = 0;
 
         for ($i = 0; $i < count($this->value); ++$i) {
-            $temp = $this->value[$i] * $shift + $carry;
+            $temp = (isset($this->value[$i]) ? $this->value[$i] : 0) * $shift + $carry;
             $carry = (int) ($temp / MATH_BIGINTEGER_BASE_FULL);
             $this->value[$i] = (int) ($temp - $carry * MATH_BIGINTEGER_BASE_FULL);
         }
@@ -3474,8 +3479,12 @@ class BigInteger
         $carry = 0;
 
         for ($i = count($this->value) - 1; $i >= 0; --$i) {
-            $temp = $this->value[$i] >> $shift | $carry;
-            $carry = ($this->value[$i] & $carry_mask) << $carry_shift;
+            $temp = 0;
+            if (isset($this->value[$i])) {
+                $temp = $this->value[$i] >> $shift | $carry;
+                $carry = ($this->value[$i] & $carry_mask) << $carry_shift;
+            }
+
             $this->value[$i] = $temp;
         }
 
@@ -3544,6 +3553,9 @@ class BigInteger
     public function _trim($value)
     {
         for ($i = count($value) - 1; $i >= 0; --$i) {
+            if (!isset($value[$i])) {
+                continue;
+            }
             if ($value[$i]) {
                 break;
             }
