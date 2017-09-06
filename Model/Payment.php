@@ -141,7 +141,7 @@ class Payment extends PaymentAbstractMethod
             $this->logger->debug($response, null, true);
             if (!$response) {
                 throw new LocalizedException(
-                    new \Magento\Framework\Phrase('Invalid response from payment server')
+                    new \Magento\Framework\Phrase(__('Invalid response from payment server'))
                 );
             }
 
@@ -184,10 +184,10 @@ class Payment extends PaymentAbstractMethod
             if ($response_refund['PO_REFUND_RESPONSE']['PO_ERROR_CODE'] == 1) {
                 $this->logger->debug($response, null, true);
                 throw new LocalizedException(
-                    new \Magento\Framework\Phrase(
+                    new \Magento\Framework\Phrase(__(
                         "Error on refunding action: "
                         . $response_refund['PO_REFUND_RESPONSE']['PO_ERROR_REASON']
-                    )
+                    ))
                 );
             }
 
@@ -200,7 +200,7 @@ class Payment extends PaymentAbstractMethod
                     break;
                 case '10':
                     throw new LocalizedException(
-                        new \Magento\Framework\Phrase('Errors occured, transaction ' . $transid . ' NOT REFUNDED')
+                        new \Magento\Framework\Phrase(__('Errors occured, transaction ') . $transid . ' ' . __('NOT REFUNDED'))
                     );
             }
         } catch (LocalizedException $e) {
@@ -227,7 +227,7 @@ class Payment extends PaymentAbstractMethod
         $redirectUrl = $this->checkoutSession->getData('PO_REDIRECT_URL');
         if (empty($redirectUrl)) {
             throw new LocalizedException(
-                new \Magento\Framework\Phrase('Can not redirect to payment gateway.')
+                new \Magento\Framework\Phrase(__('Can not redirect to payment gateway.'))
             );
         }
 
@@ -244,7 +244,7 @@ class Payment extends PaymentAbstractMethod
     {
         if (empty($order)) {
             throw new LocalizedException(
-                new \Magento\Framework\Phrase('Invalid quote data')
+                new \Magento\Framework\Phrase(__('Invalid quote data'))
             );
         }
 
@@ -640,35 +640,35 @@ class Payment extends PaymentAbstractMethod
     {
         switch ($status) {
             case self::PO_AUTHORIZING:
-                return 'PlatiOnline pending confirmation, Transaction code: ' . $transactionId . PHP_EOL;
+                return __('PlatiOnline pending confirmation, Transaction code: ') . $transactionId . PHP_EOL;
             case self::PO_AUTHORIZED:
-                return 'PlatiOnline confirmation via, Transaction code: ' . $transactionId . PHP_EOL;
+                return __('PlatiOnline confirmation via, Transaction code: ') . $transactionId . PHP_EOL;
             case self::PO_SETTLING:
-                return 'PlatiOnline pending settlement, Transaction code: ' . $transactionId . PHP_EOL;
+                return __('PlatiOnline pending settlement, Transaction code: ') . $transactionId . PHP_EOL;
             case self::PO_CREDIT:
                 switch ($creditState) {
                     case self::PO_CREDIT_CREDITING:
-                        return 'PlatiOnline pending credit, Transaction code: ' . $transactionId . PHP_EOL;
+                        return __('PlatiOnline pending credit, Transaction code: ') . $transactionId . PHP_EOL;
                     case self::PO_CREDIT_CREDITED:
-                        return 'PlatiOnline credited, Transaction code: ' . $transactionId . PHP_EOL;
+                        return __('PlatiOnline credited, Transaction code: ') . $transactionId . PHP_EOL;
                     case self::PO_CREDIT_REFUSED:
-                        return 'PlatiOnline credit refused, Transaction code: ' . $transactionId . PHP_EOL;
+                        return __('PlatiOnline credit refused, Transaction code: ') . $transactionId . PHP_EOL;
                     case self::PO_CREDIT_CASHED:
-                        return 'PlatiOnline credit cashed, Transaction code: ' . $transactionId . PHP_EOL;
+                        return __('PlatiOnline credit cashed, Transaction code: ') . $transactionId . PHP_EOL;
                 };
-                return 'PlatiOnline unknown credit state, Transaction code: ' . $transactionId . PHP_EOL;
+                return __('PlatiOnline unknown credit state, Transaction code: ') . $transactionId . PHP_EOL;
             case self::PO_CANCELING:
-                return 'PlatiOnline pending cancel, Transaction code: ' . $transactionId . PHP_EOL;
+                return __('PlatiOnline pending cancel, Transaction code: ') . $transactionId . PHP_EOL;
             case self::PO_CANCELED:
-                return 'PlatiOnline canceled, Transaction code: ' . $transactionId . PHP_EOL;
+                return __('PlatiOnline canceled, Transaction code: ') . $transactionId . PHP_EOL;
             case self::PO_AUTH_REFUSED:
-                return 'PlatiOnline refused, Transaction code: ' . $transactionId . PHP_EOL;
+                return __('PlatiOnline refused, Transaction code: ') . $transactionId . PHP_EOL;
             case self::PO_EXPIRED:
-                return 'PlatiOnline expired, Transaction code: ' . $transactionId . PHP_EOL;
+                return __('PlatiOnline expired, Transaction code: ') . $transactionId . PHP_EOL;
             case self::PO_AUTH_ERROR:
-                return 'PlatiOnline error, Transaction code: ' . $transactionId . PHP_EOL;
+                return __('PlatiOnline error, Transaction code: ') . $transactionId . PHP_EOL;
             case self::PO_PAYMENT_ONHOLD:
-                return 'PlatiOnline on hold, Transaction code: ' . $transactionId . PHP_EOL;
+                return __('PlatiOnline on hold, Transaction code: ') . $transactionId . PHP_EOL;
         }
     }
 
@@ -681,11 +681,11 @@ class Payment extends PaymentAbstractMethod
     {
         switch ($status) {
             case self::PO_AUTHORIZED:
-                return 'Transaction authorized.';
+                return __('Transaction authorized.');
             case self::PO_AUTH_REFUSED:
-                return 'Transaction failed.';
+                return __('Transaction failed.');
             case self::PO_PAYMENT_ONHOLD:
-                return 'Transaction is beeing checked.';
+                return __('Transaction is pending verification.');
         }
     }
 
