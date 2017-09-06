@@ -9,7 +9,7 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  *
  * Base Template Block
-*/
+ */
 
 namespace Xtreme\PlatiOnline\Block;
 
@@ -20,38 +20,38 @@ class BaseBlock extends \Magento\Framework\View\Element\Template
     /**
      * @var \Xtreme\Test\Helper\Data
      */
-    protected $_devToolHelper;
+    protected $devToolHelper;
 
     /**
      * @var \Magento\Framework\Url
      */
-    protected $_urlApp;
+    protected $urlApp;
 
     /**
      * @var \Xtreme\Test\Model\Config
      */
-    protected $_config;
+    protected $config;
 
     /**
      * @var \Xtreme\PlatiOnline\Model\Payment
      */
-    protected $_paymentApi;
+    protected $paymentApi;
 
     /**
      * @var \Xtreme\PlatiOnline\Model\Payment
      */
-    protected $_checkoutSession;
+    protected $checkoutSession;
 
     /**
      * @param \Xtreme\Test\Block\Context $context
      */
     public function __construct(\Xtreme\PlatiOnline\Block\Context $context)
     {
-        $this->_devToolHelper = $context->getTestHelper();
-        $this->_config = $context->getConfig();
-        $this->_urlApp=$context->getUrlFactory()->create();
-        $this->_paymentApi = $context->getPaymentApi();
-        $this->_checkoutSession = $context->getCheckoutSession();
+        $this->devToolHelper = $context->getTestHelper();
+        $this->config = $context->getConfig();
+        $this->urlApp = $context->getUrlFactory()->create();
+        $this->paymentApi = $context->getPaymentApi();
+        $this->checkoutSession = $context->getCheckoutSession();
 
         parent::__construct($context);
     }
@@ -62,7 +62,7 @@ class BaseBlock extends \Magento\Framework\View\Element\Template
      */
     public function getEventDetails()
     {
-        return  $this->_devToolHelper->getEventDetails();
+        return  $this->devToolHelper->getEventDetails();
     }
 
     /**
@@ -71,7 +71,7 @@ class BaseBlock extends \Magento\Framework\View\Element\Template
      */
     public function getCurrentUrl()
     {
-        return $this->_urlApp->getCurrentUrl();
+        return $this->urlApp->getCurrentUrl();
     }
 
     /**
@@ -81,7 +81,7 @@ class BaseBlock extends \Magento\Framework\View\Element\Template
      */
     public function getControllerUrl($routePath)
     {
-        return $this->_urlApp->getUrl($routePath);
+        return $this->urlApp->getUrl($routePath);
     }
 
     /**
@@ -91,7 +91,7 @@ class BaseBlock extends \Magento\Framework\View\Element\Template
      */
     public function getConfigValue($path)
     {
-        return $this->_config->getCurrentStoreConfigValue($path);
+        return $this->config->getCurrentStoreConfigValue($path);
     }
 
     /**

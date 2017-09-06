@@ -9,7 +9,7 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  *
  * Module Database Setup
-*/
+ */
 
 namespace Xtreme\PlatiOnline\Setup;
 
@@ -48,8 +48,10 @@ class InstallData implements InstallDataInterface
      * {@inheritdoc}
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
-    public function install(ModuleDataSetupInterface $setup, ModuleContextInterface $context)
-    {
+    public function install(
+        ModuleDataSetupInterface $setup,
+        ModuleContextInterface $context
+    ) {
         /**
          * Install order states
          */
@@ -90,7 +92,14 @@ class InstallData implements InstallDataInterface
                 'visible_on_front' => true,
             ],
             'canceled' => [
-                'statuses' => ['canceling_plationline', 'credit_cancel_plationline', 'cancel_plationline', 'payment_refused_plationline', 'expired30_plationline', 'error_plationline'],
+                'statuses' => [
+                    'canceling_plationline',
+                    'credit_cancel_plationline',
+                    'cancel_plationline',
+                    'payment_refused_plationline',
+                    'expired30_plationline',
+                    'error_plationline'
+                ],
                 'visible_on_front' => true,
             ],
             'holded' => [

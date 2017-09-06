@@ -9,7 +9,7 @@
  * @license     http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  *
  * Template Context Block
-*/
+ */
 
 namespace Xtreme\PlatiOnline\Block;
 
@@ -18,37 +18,37 @@ class Context extends \Magento\Framework\View\Element\Template\Context
     /**
      * @var \Xtreme\PlatiOnline\Helper\Data
      */
-    protected $_devToolHelper;
+    private $devToolHelper;
 
     /**
      * @var \Magento\Framework\Registry
      */
-    protected $registry;
+    private $registry;
 
     /**
      * @var \Xtreme\PlatiOnline\Model\Config
      */
-    protected $_config;
+    private $config;
 
     /**
      * @var \Magento\Framework\ObjectManagerInterface
      */
-    protected $_objectManager;
+    private $objectManager;
 
     /**
      * @var \Magento\Framework\UrlFactory
      */
-    protected $_urlFactory;
+    private $urlFactory;
 
     /**
      * @var \Xtreme\PlatiOnline\Model\Payment
      */
-    protected $_paymentApi;
+    private $paymentApi;
 
     /**
      * @var \Magento\Checkout\Model\Session
      */
-    protected $_checkoutSession;
+    private $checkoutSession;
 
     /**
      * @param \Magento\Framework\App\RequestInterface $request
@@ -117,15 +117,15 @@ class Context extends \Magento\Framework\View\Element\Template\Context
         \Magento\Framework\ObjectManagerInterface $objectManager,
         \Magento\Framework\UrlFactory $urlFactory
     ) {
-        $this->_devToolHelper = $devToolHelper;
+        $this->devToolHelper = $devToolHelper;
         $this->registry = $registry;
-        $this->_config = $viewConfig;
-        $this->_paymentApi = $payment;
-        $this->_objectManager=$objectManager;
-        $this->_urlFactory=$urlFactory;
-        $this->_checkoutSession = $checkoutSession;
+        $this->config = $viewConfig;
+        $this->paymentApi = $payment;
+        $this->objectManager=$objectManager;
+        $this->urlFactory=$urlFactory;
+        $this->checkoutSession = $checkoutSession;
 
-       parent::__construct(
+        parent::__construct(
             $request,
             $layout,
             $eventManager,
@@ -160,7 +160,7 @@ class Context extends \Magento\Framework\View\Element\Template\Context
      */
     public function getTestHelper()
     {
-        return $this->_devToolHelper;
+        return $this->devToolHelper;
     }
 
     /**
@@ -178,7 +178,7 @@ class Context extends \Magento\Framework\View\Element\Template\Context
      */
     public function getConfig()
     {
-        return $this->_config;
+        return $this->config;
     }
 
     /**
@@ -187,7 +187,7 @@ class Context extends \Magento\Framework\View\Element\Template\Context
      */
     public function getObjectManager()
     {
-        return $this->_objectManager;
+        return $this->objectManager;
     }
 
     /**
@@ -196,7 +196,7 @@ class Context extends \Magento\Framework\View\Element\Template\Context
      */
     public function getUrlFactory()
     {
-        return $this->_urlFactory;
+        return $this->urlFactory;
     }
 
     /**
@@ -205,7 +205,7 @@ class Context extends \Magento\Framework\View\Element\Template\Context
      */
     public function getPaymentApi()
     {
-        return $this->_paymentApi;
+        return $this->paymentApi;
     }
 
     /**
@@ -214,6 +214,6 @@ class Context extends \Magento\Framework\View\Element\Template\Context
      */
     public function getCheckoutSession()
     {
-        return $this->_checkoutSession;
+        return $this->checkoutSession;
     }
 }

@@ -54,6 +54,8 @@
  * @link       http://phpseclib.sourceforge.net
  */
 
+namespace Xtreme\PlatiOnline\Helper\Crypt;
+
 /**#@+
  * @access public
  * @see Crypt_Base::encrypt()
@@ -121,7 +123,8 @@ define('CRYPT_MODE_MCRYPT', 2);
  * @access  public
  * @package Crypt_Base
  */
-class Crypt_Base {
+class Base
+{
     /**
      * The Encryption Mode
      *
@@ -1266,14 +1269,14 @@ class Crypt_Base {
         $this->enchanged = $this->dechanged = true;
 
         if (!isset($this->enmcrypt)) {
-            static $mcrypt_modes = array(
+            static $mcrypt_modes = [
                 CRYPT_MODE_CTR    => 'ctr',
                 CRYPT_MODE_ECB    => MCRYPT_MODE_ECB,
                 CRYPT_MODE_CBC    => MCRYPT_MODE_CBC,
                 CRYPT_MODE_CFB    => 'ncfb',
                 CRYPT_MODE_OFB    => MCRYPT_MODE_NOFB,
                 CRYPT_MODE_STREAM => MCRYPT_MODE_STREAM,
-            );
+            ];
 
             $this->demcrypt = mcrypt_module_open($this->cipher_name_mcrypt, '', $mcrypt_modes[$this->mode], '');
             $this->enmcrypt = mcrypt_module_open($this->cipher_name_mcrypt, '', $mcrypt_modes[$this->mode], '');
@@ -1284,7 +1287,6 @@ class Crypt_Base {
             if ($this->mode == CRYPT_MODE_CFB) {
                 $this->ecb = mcrypt_module_open($this->cipher_name_mcrypt, '', MCRYPT_MODE_ECB, '');
             }
-
         } // else should mcrypt_generic_deinit be called?
 
         if ($this->mode == CRYPT_MODE_CFB) {
@@ -1364,8 +1366,8 @@ class Crypt_Base {
      */
     function _clearBuffers()
     {
-        $this->enbuffer = array('encrypted'  => '', 'xor' => '', 'pos' => 0, 'enmcrypt_init' => true);
-        $this->debuffer = array('ciphertext' => '', 'xor' => '', 'pos' => 0, 'demcrypt_init' => true);
+        $this->enbuffer = ['encrypted'  => '', 'xor' => '', 'pos' => 0, 'enmcrypt_init' => true];
+        $this->debuffer = ['ciphertext' => '', 'xor' => '', 'pos' => 0, 'demcrypt_init' => true];
 
         // mcrypt's handling of invalid's $iv:
         // $this->encryptIV = $this->decryptIV = strlen($this->iv) == $this->block_size ? $this->iv : str_repeat("\0", $this->block_size);
@@ -1980,7 +1982,7 @@ class Crypt_Base {
      */
     function &_getLambdaFunctions()
     {
-        static $functions = array();
+        static $functions = [];
         return $functions;
     }
 }
