@@ -270,7 +270,9 @@ class BigInteger
                     define('MATH_BIGINTEGER_MODE', MATH_BIGINTEGER_MODE_BCMATH);
                     break;
                 default:
-                    define('MATH_BIGINTEGER_MODE', MATH_BIGINTEGER_MODE_INTERNAL);
+                    throw new Exception('No Big Integer helper library found');
+                    // internal mode is not working for the moment
+                    // define('MATH_BIGINTEGER_MODE', MATH_BIGINTEGER_MODE_INTERNAL);
             }
         }
 
