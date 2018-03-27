@@ -413,7 +413,7 @@ class PO5
         if (!$xml->schemaValidate($url)) {
             $errors = libxml_get_errors();
             foreach ($errors as $error) {
-                throw new \Exception($this->libxml_display_error($error));
+                throw new \Exception($this->libxml_display_error($error, $poxml));
             }
             libxml_clear_errors();
             return false; // die('<br />INVALID XML');
@@ -461,7 +461,7 @@ class PO5
         return ['PO_AUTH_URL_RESPONSE' => $this->array_change_key_case_recursive(json_decode(json_encode((array)$xml), true))];
     }
 
-    private function libxml_display_error($error)
+    private function libxml_display_error($error, $xmlMessage = null)
     {
         $return = "<br />\n";
         switch ($error->level) {
@@ -477,6 +477,9 @@ class PO5
         }
         $return .= trim($error->message);
         $return .= "\n";
+        if ($xmlMessage) {
+            $return .= "Returned message: $xmlMessage\n";
+        }
         return $return;
     }
 
