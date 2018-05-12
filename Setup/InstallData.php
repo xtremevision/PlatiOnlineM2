@@ -124,5 +124,17 @@ class InstallData implements InstallDataInterface
             ['status', 'state', 'is_default'],
             $data
         );
+
+        /** Update visibility for states */
+        //$states = ['new', 'processing', 'complete', 'closed', 'canceled', 'holded', 'payment_review'];
+        $states = ['pending_payment'];
+        foreach ($states as $state) {
+            $setup->getConnection()->update(
+                $setup->getTable('sales_order_status_state'),
+                ['visible_on_front' => 1],
+                ['state = ?' => $state]
+            );
+        }
+
     }
 }

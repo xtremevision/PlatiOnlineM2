@@ -1,0 +1,26 @@
+<?php
+/**
+ * Copyright © 2016 Magento. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+?>
+<?php /** @var $block \Magento\Sales\Block\Order\Info */ ?>
+
+<span class="order-status"><?php /* @escapeNotVerified */ echo $block->getOrder()->getStatusLabel() ?></span>
+
+<?php
+    $order = $this->getOrder();
+    $payment = $order->getPayment();
+    if($payment->getId())
+    {
+	$objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $txn = $objectManager->create('Magento\Sales\Api\Data\TransactionSearchResultInterfaceFactory')->create()->addOrderIdFilter($order->getId())->getFirstItem();
+	$data = $txn->getAdditionalInformation();
+    }
+?>
+
+<?php if(isset($data) && $order->getStatus() == 'payment_refused_plationline'): ?>
+    <span><a href="<?php echo $data['raw_details_info']['PO_REDIRECT_URL']; ?>" class='action primary'><?php echo __('REINCEARCA PLATA'); ?></a></span>
+<?php endif; ?>
+<style>a.action.primary{    vertical-align: top !important;
+        margin-top: 5px !important;}</style>

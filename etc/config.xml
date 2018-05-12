@@ -15,7 +15,8 @@
         <payment>
             <xtreme_plationline>
                 <model>Xtreme\PlatiOnline\Model\Payment</model>
-                <payment_action>authorize_capture</payment_action>
+                <!--<payment_action>authorize_capture</payment_action>-->
+                <payment_action>true</payment_action>
                 <title>Plati Online</title>
                 <active>0</active>
                 <debug>0</debug>
@@ -23,6 +24,8 @@
                 <gateway_url><![CDATA[https://secure2.plationline.ro/trans30.asp]]></gateway_url>
                 <relay_method>POST_S2S_PO_PAGE</relay_method>
                 <payment_timeout>0</payment_timeout>
+		<group>offline</group>
+                <order_status>pending_payment</order_status>
             </xtreme_plationline>
         </payment>
     </default>

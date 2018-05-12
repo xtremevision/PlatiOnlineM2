@@ -10,7 +10,7 @@
  *
  * Payment Failure template
  *
- * @var $block \Xtreme\PlatiOnline\Block\Payment\Redirect
+ * @var $block \Xtreme\PlatiOnline\Block\Payment\Failure
  */
 ?>
 <br />
@@ -21,4 +21,7 @@
 <li><?php echo __('banca emitenta a refuzat tranzactia datorita unor restrictii de securitate impuse cardului sau tipul de card folosit nu este acceptat')?></li>
 <li><?php echo __('reteaua de tranzactionare este momentan indisponibila')?></li>
 </ul>
-<p><?php echo __('Va recomandam sa reluati procesarea tranzactiei in cateva minute, dupa efectuarea schimbarilor necesare')?></p>
+<?php if(!$this->getPOError()): ?>
+    <p><?php echo __('Va recomandam sa reluati procesarea tranzactiei in cateva minute, dupa efectuarea schimbarilor necesare')?></p>
+    <p><a href='<?php echo $this->getPaymentLink(); ?>' class='action primary'><?php echo __('REINCEARCA PLATA'); ?></a></p>
+<?php endif; ?>

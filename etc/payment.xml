@@ -11,6 +11,11 @@
  Payment Config
 -->
 <payment xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Payment:etc/payment.xsd">
+    <groups>
+        <group id="offline">
+            <label>Offline Payment Methods</label>
+        </group>
+    </groups>
     <methods>
         <method name="xtreme_plationline">
             <allow_multiple_address>1</allow_multiple_address>

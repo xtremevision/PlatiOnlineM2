@@ -25,4 +25,14 @@ class Failure extends BaseBlock
     {
         return '#none';
     }
+
+    public function getPOError()
+    {
+        return $this->checkoutSession->getData('PO_ERROR');
+    }
+	
+	public function getPaymentLink()
+	{
+        return $this->checkoutSession->getData('PO_REDIRECT_URL');
+	}
 }

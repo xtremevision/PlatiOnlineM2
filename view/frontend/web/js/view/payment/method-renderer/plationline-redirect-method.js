@@ -19,6 +19,7 @@ define(
     'Magento_Checkout/js/action/select-payment-method',
     'Magento_Customer/js/model/customer',
     'Magento_Checkout/js/checkout-data',
+    'Magento_Checkout/js/model/quote',
     'Magento_Checkout/js/model/payment/additional-validators',
     'mage/url',
     ],
@@ -29,9 +30,9 @@ define(
         selectPaymentMethodAction,
         customer,
         checkoutData,
+	quote,
         additionalValidators,
-        url
-    ) {
+        url) {
         'use strict';
 
         return Component.extend({
@@ -70,7 +71,7 @@ define(
 
             afterPlaceOrder: function () {
                 this.selectPaymentMethod();
-                 window.location.replace(url.build('plationline/payment/redirect/'));
+                 window.location.replace(url.build('plationline/payment/redirect/' + quote.getQuoteId()));
             },
             /** Returns send check to info */
             getImage: function () {

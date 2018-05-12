@@ -15,6 +15,9 @@ namespace Xtreme\PlatiOnline\Model;
 
 use \Magento\Payment\Model\Method\AbstractMethod as PaymentAbstractMethod;
 use \Magento\Framework\Exception\LocalizedException;
+use \Magento\Framework\App\Action\Context;
+use \Magento\Sales\Model\Order;
+use \Magento\Framework\DataObject;
 
 class Payment extends PaymentAbstractMethod
 {
@@ -22,11 +25,13 @@ class Payment extends PaymentAbstractMethod
 
     protected $_code = self::CODE;
 
-    protected $_canCapture                  = true;
-    protected $_canAuthorize                = true;
-    protected $_canRefund                   = true;
-    protected $_canVoid                     = true;
-    protected $_canUseInternal              = false;
+    //protected $_isGateway		= true;
+    protected $_isOffline		= true;
+    //protected $_canCapture              = true;
+    //protected $_canAuthorize            = true;
+    //protected $_canRefund               = true;
+    //protected $_canVoid                 = true;
+    //protected $_canUseInternal          = false;
 
     /* Plationline response statuses */
     const PO_AUTHORIZING = 1;
@@ -76,6 +81,14 @@ class Payment extends PaymentAbstractMethod
     private $orderFactory;
     private $orderService;
     private $orderSender;
+    private $_order;
+    private $_transaction_id;
+    private $_itsnMessage;
+    protected $_builderInterface;
+    protected $_invoiceService;
+    protected $_transaction;
+    private $_objectManager;
+    private $_queryResponse;
 
     private $debugReplacePrivateDataKeys = ['number', 'exp_month', 'exp_year', 'cvc'];
 
@@ -95,6 +108,10 @@ class Payment extends PaymentAbstractMethod
         \Magento\Sales\Model\Service\OrderService $orderService,
         \Magento\Sales\Model\Order\Email\Sender\OrderSender $orderSender,
         \Xtreme\PlatiOnline\Helper\PO5 $platiOnline,
+        \Magento\Sales\Model\Order\Payment\Transaction\BuilderInterface $builderInterface,
+	\Magento\Sales\Model\Service\InvoiceService $invoiceService,
+	\Magento\Framework\DB\Transaction $transaction,
+        \Magento\Framework\ObjectManagerInterface $objectmanager,
         array $data = []
     ) {
         parent::__construct(
@@ -119,7 +136,28 @@ class Payment extends PaymentAbstractMethod
         $this->orderFactory = $orderFactory;
         $this->orderService = $orderService;
         $this->orderSender = $orderSender;
+        $this->_builderInterface = $builderInterface;
+	$this->_invoiceService = $invoiceService;
+        $this->_transaction = $transaction;
+        $this->_objectManager = $objectmanager;
     }
+
+    /**
+     * Authorize payment abstract method
+     *
+     * @param \Magento\Framework\DataObject|InfoInterface $payment
+     * @param float $amount
+     * @return $this
+     * @throws \Magento\Framework\Exception\LocalizedException
+     * @api
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     */
+    /*public function authorize(\Magento\Payment\Model\InfoInterface $payment, $amount)
+    {
+        if (!$this->canAuthorize()) {
+            throw new \Magento\Framework\Exception\LocalizedException(__('The authorize action is not available.'));
+        }
+    }*/
 
     /**
      * Payment capture
@@ -129,30 +167,10 @@ class Payment extends PaymentAbstractMethod
      * @return $this
      * @throws \Magento\Framework\Validator\Exception
      */
-    public function capture(\Magento\Payment\Model\InfoInterface $payment, $amount)
+    /*public function capture(\Magento\Payment\Model\InfoInterface $payment, $amount)
     {
-        /** @var \Magento\Sales\Model\Order $order */
-        $order = $payment->getOrder();
-        $this->checkoutSession->setData('PO_REDIRECT_URL', '');
-        $request = $this->getPostData($order);
 
-        try {
-            $response = $this->callApi($request);
-            $this->logger->debug($response, null, true);
-            if (!$response) {
-                throw new LocalizedException(
-                    new \Magento\Framework\Phrase(__('Invalid response from payment server'))
-                );
-            }
-
-            $this->checkoutSession->setData('PO_REDIRECT_URL', $response['PO_REDIRECT_URL']);
-        } catch (\Exception $e) {
-            $this->logger->debug(['request' => $request, 'exception' => $e->getMessage()], null, true);
-            throw new \Magento\Framework\Validator\Exception(__('Payment capturing error.' . $e->getMessage()));
-        }
-
-        return $this;
-    }
+    }*/
 
     protected function getImage()
     {
@@ -180,9 +198,9 @@ class Payment extends PaymentAbstractMethod
         try {
             $response = $this->callApi($request, self::PO_REFUND_ACTION, 'refund');
 
-            $this->logger->debug($response, null, true);
+            $this->logger->debug(array("refund: " => $response), null, true);
             if ($response_refund['PO_REFUND_RESPONSE']['PO_ERROR_CODE'] == 1) {
-                $this->logger->debug($response, null, true);
+                $this->logger->debug(array("refund: " => $response), null, true);
                 throw new LocalizedException(
                     new \Magento\Framework\Phrase(__(
                         "Error on refunding action: "
@@ -224,6 +242,21 @@ class Payment extends PaymentAbstractMethod
      */
     public function getLastRedirect()
     {
+	try
+	{
+    	$last_order = $this->checkoutSession->getLastRealOrder();
+		$this->_order = $last_order;
+		
+	    $this->logger->debug(array(
+		"orderPlaceRedirectUrl(): last_order_id" => $last_order->getIncrementId(),	    
+	    ), null, true);
+        } catch (\Exception $e) {
+            $this->logger->debug(['request' => $request, 'exception' => $e->getMessage()], null, true);
+            throw new \Magento\Framework\Validator\Exception(__('Payment redirect error.' . $e->getMessage()));
+        }
+
+	$this->getPORedirectUrl($last_order);
+
         $redirectUrl = $this->checkoutSession->getData('PO_REDIRECT_URL');
         if (empty($redirectUrl)) {
             throw new LocalizedException(
@@ -231,7 +264,42 @@ class Payment extends PaymentAbstractMethod
             );
         }
 
+	$this->_objectManager->create('Magento\Sales\Model\OrderNotifier')->notify($last_order);
         return $redirectUrl;
+    }
+
+    private function getPORedirectUrl($order)
+    {
+	$this->checkoutSession->setData('PO_ERROR', 0);
+        $this->checkoutSession->setData('PO_REDIRECT_URL', '');
+        $request = $this->getPostData($order);
+
+        try {
+            $this->logger->debug(array("before callApi" => $request), null, true);
+            $response = $this->callApi($request);
+            $this->logger->debug(array("after callApi: " => $response), null, true);
+            if (!$response) {
+                throw new LocalizedException(
+                    new \Magento\Framework\Phrase(__('Invalid response from payment server'))
+                );
+            }
+	    if($response['PO_ERROR_CODE'] == 0)
+	    {
+	        $this->saveTransactionBeforePayment($response);
+        	$this->checkoutSession->setData('PO_REDIRECT_URL', $response['PO_REDIRECT_URL']);
+	    }
+    	    else
+	    {
+		$url = $this->storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB)."plationline/payment/failure";
+		$this->checkoutSession->setData('PO_REDIRECT_URL', $url);
+		$this->checkoutSession->setData('PO_ERROR', 1);
+	    }
+        } catch (\Exception $e) {
+            $this->logger->debug(['request' => $request, 'exception' => $e->getMessage()], null, true);
+            throw new \Magento\Framework\Validator\Exception(__('Payment redirect error.' . $e->getMessage()));
+        }
+
+        return $this;
     }
 
     /**
@@ -387,9 +455,11 @@ class Payment extends PaymentAbstractMethod
      */
     public function processItsn(array $parameters)
     {
-        $this->logger->debug($parameters, null, true);
+        $this->logger->debug(array("processItsn: " => $parameters), null, true);
 
         $itsnMessage = $this->decryptItsnResponse($parameters);
+        $this->logger->debug(array('itsn: ' => $itsnMessage), null, true);
+        $this->_itsnMessage = $itsnMessage;
         $keys = array_keys($itsnMessage);
         $itsnMessage = $itsnMessage[$keys[0]];
 
@@ -397,6 +467,26 @@ class Payment extends PaymentAbstractMethod
             $itsnMessage['F_ORDER_NUMBER'],
             $itsnMessage['X_TRANS_ID']
         );
+
+        $this->_order = $this->orderFactory->create()->loadByIncrementId($itsnMessage['F_ORDER_NUMBER']);
+        $this->_transaction_id = $itsnMessage['X_TRANS_ID'];
+		
+        $statusCode = $this->_queryResponse['ORDER']['TRANZACTION']['STATUS_FIN1']['CODE'];
+
+        if ($statusCode == self::PO_AUTHORIZED) {
+            if ($this->_order->getState() != \Magento\Sales\Model\Order::STATE_PROCESSING) {
+                //$this->orderSender->send($order);
+                $this->_order->setAuthorized(true);
+                $this->_order->save();
+            }
+        }
+		/*else if (in_array($statusCode, [self::PO_CANCELED, self::PO_AUTH_REFUSED])) {
+            $this->_order->cancel()->save();
+        }*/
+		
+        //$this->_handleAuthorization();
+		if($statusCode == self::PO_AUTHORIZED)
+			$this->_createInvoice($statusCode == self::PO_AUTHORIZED);
 
         return [
             'success' => $success,
@@ -431,13 +521,13 @@ class Payment extends PaymentAbstractMethod
             ];
         }
 
-        $this->logger->debug($parameters, null, true);
+        $this->logger->debug(array("processReturn: " => $parameters), null, true);
 
         $authorizationResponse = $this->decryptResponse($parameters);
         $authData = isset($authorizationResponse['PO_AUTH_URL_RESPONSE'])
             ? $authorizationResponse['PO_AUTH_URL_RESPONSE']
             : $authorizationResponse['PO_AUTH_RESPONSE'];
-        $this->logger->debug($authorizationResponse, null, true);
+        $this->logger->debug(array("processReturn: " => $authorizationResponse), null, true);
         // we lie, there is no query
         $success = $this->processQuery([
             'PO_QUERY_RESPONSE' => [
@@ -457,6 +547,30 @@ class Payment extends PaymentAbstractMethod
             ]
         ]);
 
+        $this->_order = $this->orderFactory->create()->loadByIncrementId($authData['F_ORDER_NUMBER']);
+        $this->_transaction_id = $authData['X_TRANS_ID'];		
+        $statusCode = $authData['X_RESPONSE_CODE'];
+		$stateName = $this->getPOStateName($statusCode, null);
+		$poComment = $this->getPOComment($statusCode, null, $this->_transaction_id, ' (RELAY)') ;
+		$this->logger->debug(array("processReturn statename: " => $stateName, "poComment" => $poComment), null, true);
+		
+		$this->_order->addStatusToHistory(
+            $stateName,
+            $poComment
+        );
+		
+		//$this->_order->setState($stateName)->setStatus($statusCode);
+        if ($statusCode == self::PO_AUTHORIZED) {
+            if ($this->_order->getState() != \Magento\Sales\Model\Order::STATE_PROCESSING) {
+				$this->logger->debug(array("processReturn setAuthorized" => true), null, true);
+                $this->_order->setAuthorized(true);
+            }
+        }
+		
+		$this->logger->debug(array("processReturn orderSave" => true), null, true);
+		$this->_order->save();
+		//$this->updateTransaction($authData['X_TRANS_ID']);
+		
         return [
             'success' => $authData['X_RESPONSE_CODE'] != self::PO_AUTH_REFUSED,
             'transactionId' => $authData['X_TRANS_ID'],
@@ -524,29 +638,85 @@ class Payment extends PaymentAbstractMethod
         $keys = array_keys($response);
         $responseData = $response[$keys[0]];
 
+        $this->logger->debug(array("processQuery: " => $responseData), null, true);
+		$this->_queryResponse = $responseData;
+
         if ($responseData['PO_ERROR_CODE'] != 0) {
             return false;
         }
 
-        $order = $this->orderFactory->create()->loadByIncrementId($responseData['ORDER']['F_ORDER_NUMBER']);
-        $statusCode = $responseData['ORDER']['TRANZACTION']['STATUS_FIN1']['CODE'];
-
-        if ($statusCode == self::PO_AUTHORIZED) {
-            if ($order->getState() != \Magento\Sales\Model\Order::STATE_PROCESSING) {
-                $this->orderSender->send($order);
-                $order->setAuthorized(true);
-                $order->save();
-            }
-        }
-
-        if (in_array($statusCode, [self::PO_CANCELED, self::PO_AUTH_REFUSED])) {
-            $order->cancel()->save();
-        }
-
-        $this->saveTransaction($order, $response, $statusCode != self::PO_AUTHORIZED);
-
         return true;
     }
+
+    protected function _createInvoice($closed)
+    {	
+        $this->logger->debug(array("order_id" => $this->_order->getIncrementId(), "txid" => $this->_transaction_id), null, true);
+
+        if (!$this->_order->canInvoice()) {
+            //when order cannot create invoice, need to have some logic to take care
+            $this->_order->addStatusToHistory($this->_order->getStatus(), // keep order status/state
+                'Error in creating an invoice', $notified = true);
+        }
+
+        //$this->_order->getPayment()->setTransactionId($this->_transaction_id);
+        //$this->_order->getPayment()->place();
+        //$this->_order->save();
+		$this->saveTransaction($closed);
+
+        $invoice = $this->_invoiceService->prepareInvoice($this->_order);
+        $invoice->register();
+        $invoice->save();
+        /*$transactionSave = $this->_transaction->addObject(
+            $invoice
+        )->addObject(
+            $invoice->getOrder()
+        );
+        $transactionSave->save();*/
+		
+	$invoiceSender = $this->_objectManager->get('Magento\Sales\Model\Order\Email\Sender\InvoiceSender');
+        $invoiceSender->send($invoice);
+        //send notification code
+	$this->_order->addStatusHistoryComment(
+            __('Notified customer about invoice #%1.', $invoice->getId())
+        )
+        ->setIsCustomerNotified(true)
+        ->save();
+    }
+
+    protected function _handleAuthorization($underVerification = true)
+    {
+        $payment = $this->_order->getPayment();
+        $payment->setPreparedMessage("some message");
+        $payment->setTransactionId($this->_transaction_id);
+        $trans = $this->_builderInterface;
+        $transaction = $trans->setPayment($payment)
+            ->setOrder($this->_order)
+            ->setTransactionId($this->_transaction_id)
+            ->setAdditionalInformation(
+                [\Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS => array('id'=>$this->_transaction_id)]
+            )
+            ->setFailSafe(true)
+            //build method creates the transaction and returns the object
+            ->build(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_REFUND);
+        $payment->addTransactionCommentsToOrder(
+            $transaction,
+            "some message"
+        );
+        $payment->setIsTransactionClosed(0);
+
+        if (!$underVerification) {
+            $payment->setIsTransactionPending(false);
+            $this->_createInvoice();
+            $payment->registerAuthorizationNotification($this->_itsnMessage['F_AMOUNT']);
+            //$this->_order->setStatus(Order::STATE_PROCESSING);
+        } else {
+            $payment->setIsTransactionPending(true);
+            $this->_order->setStatus(Order::STATE_PAYMENT_REVIEW);
+			$this->_objectManager->create('Magento\Sales\Model\OrderNotifier')->notify($this->_order);
+        }
+        $this->_order->save();
+    }
+
 
     /**
      * Save magento transaction details
@@ -555,21 +725,53 @@ class Payment extends PaymentAbstractMethod
      * @param  boolean $closed
      * @return boolean
      */
-    public function saveTransaction(\Magento\Sales\Model\Order $order, $response, $closed = true)
+    public function saveTransaction($closed = true)
     {
-        $keys = array_keys($response);
-        $responseData = $response[$keys[0]];
+        //$keys = array_keys($this->_queryResponse);
+        //$responseData = $this->_queryResponse[$keys[0]];
+        $this->logger->debug(array("saveTransaction" => $this->_queryResponse), null, true);
 
-        $transactionId = $responseData['ORDER']['TRANZACTION']['X_TRANS_ID'];
-        $state = $responseData['ORDER']['TRANZACTION']['STATUS_FIN1']['CODE'];
-        $creditState = $state == self::PO_CREDIT ? $responseData['ORDER']['TRANZACTION']['STATUS_FIN2']['CODE'] : null;
+        $transactionId = $this->_queryResponse['ORDER']['TRANZACTION']['X_TRANS_ID'];
+        $state = $this->_queryResponse['ORDER']['TRANZACTION']['STATUS_FIN1']['CODE'];
+        $creditState = $state == self::PO_CREDIT ? $this->_queryResponse['ORDER']['TRANZACTION']['STATUS_FIN2']['CODE'] : null;
 
         // prepare payment transaction
-        $payment = $order->getPayment();
+        $payment = $this->_order->getPayment();
         $payment->setTransactionId($transactionId);
         $payment->setLastTransId($transactionId);
         $payment->setCcTransId($transactionId);
-        $payment->setIsTransactionClosed(($closed ? 1 : 0));
+        $payment->setIsTransactionClosed($closed);
+
+        // save transaction raw details
+        $transaction = $payment->addTransaction(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_ORDER);
+        $transaction->setAdditionalInformation(
+            \Magento\Sales\Model\Order\Payment\Transaction::RAW_DETAILS,
+            $this->_queryResponse
+        );
+        $transaction->save();
+
+        $this->_order->addStatusToHistory(
+            $this->getPOStateName($state, $creditState),
+            $this->getPOComment($state, $creditState, $transactionId, ' (ITSN)')
+        );
+
+        return $this->_order->save();
+    }
+
+    public function saveTransactionBeforePayment($response)
+    {
+        //$keys = array_keys($this->_queryResponse);
+        //$responseData = $this->_queryResponse[$keys[0]];
+        $this->logger->debug(array("saveTransactionBeforePayment" => $response), null, true);
+
+        $transactionId = $response['X_TRANS_ID'];
+
+        // prepare payment transaction
+        $payment = $this->_order->getPayment();
+        $payment->setTransactionId($transactionId);
+        $payment->setLastTransId($transactionId);
+        $payment->setCcTransId($transactionId);
+        $payment->setIsTransactionClosed(false);
 
         // save transaction raw details
         $transaction = $payment->addTransaction(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_ORDER);
@@ -579,12 +781,17 @@ class Payment extends PaymentAbstractMethod
         );
         $transaction->save();
 
-        $order->addStatusToHistory(
-            $this->getPOStateName($state, $creditState),
-            $this->getPOComment($state, $creditState, $transactionId)
+		$creditState = null;
+		$stateName = $this->getPOStateName(self::PO_AUTHORIZING, $creditState);
+        $poComment = $this->getPOComment(self::PO_AUTHORIZING, $creditState, $transactionId);
+        $this->logger->debug(array("statename" => $stateName, "poComment" => $poComment), null, true);
+
+        $this->_order->addStatusToHistory(
+            $stateName,
+            $poComment
         );
 
-        return $order->save();
+        return $this->_order->save();
     }
 
     /**
@@ -636,40 +843,61 @@ class Payment extends PaymentAbstractMethod
      * @param  int $transactionId
      * @return string
      */
-    protected function getPOComment($status, $creditState, $transactionId)
+    protected function getPOComment($status, $creditState, $transactionId, $suffix = null)
     {
         switch ($status) {
             case self::PO_AUTHORIZING:
-                return __('PlatiOnline pending confirmation, Transaction code: ') . $transactionId . PHP_EOL;
+				$comment = __('PlatiOnline pending confirmation, Transaction code: ');
+                break;
             case self::PO_AUTHORIZED:
-                return __('PlatiOnline confirmation via, Transaction code: ') . $transactionId . PHP_EOL;
+                $comment = __('PlatiOnline confirmation via, Transaction code: ');
+				break;
             case self::PO_SETTLING:
-                return __('PlatiOnline pending settlement, Transaction code: ') . $transactionId . PHP_EOL;
+                $comment = __('PlatiOnline pending settlement, Transaction code: ');
+				break;
             case self::PO_CREDIT:
                 switch ($creditState) {
                     case self::PO_CREDIT_CREDITING:
-                        return __('PlatiOnline pending credit, Transaction code: ') . $transactionId . PHP_EOL;
+                        $comment = __('PlatiOnline pending credit, Transaction code: ');
+						break;
                     case self::PO_CREDIT_CREDITED:
-                        return __('PlatiOnline credited, Transaction code: ') . $transactionId . PHP_EOL;
+						$comment = __('PlatiOnline credited, Transaction code: ');
+                        break;
                     case self::PO_CREDIT_REFUSED:
-                        return __('PlatiOnline credit refused, Transaction code: ') . $transactionId . PHP_EOL;
+                        $comment = __('PlatiOnline credit refused, Transaction code: ');
+                        break;
                     case self::PO_CREDIT_CASHED:
-                        return __('PlatiOnline credit cashed, Transaction code: ') . $transactionId . PHP_EOL;
+                        $comment = __('PlatiOnline credit cashed, Transaction code: ');
+                        break;
+					default:
+						$comment = __('PlatiOnline unknown credit state, Transaction code: ');
+                        break;
                 };
-                return __('PlatiOnline unknown credit state, Transaction code: ') . $transactionId . PHP_EOL;
+				break;
             case self::PO_CANCELING:
-                return __('PlatiOnline pending cancel, Transaction code: ') . $transactionId . PHP_EOL;
+                $comment = __('PlatiOnline pending cancel, Transaction code: ');
+				break;
             case self::PO_CANCELED:
-                return __('PlatiOnline canceled, Transaction code: ') . $transactionId . PHP_EOL;
+                $comment = __('PlatiOnline canceled, Transaction code: ');
+				break;
             case self::PO_AUTH_REFUSED:
-                return __('PlatiOnline refused, Transaction code: ') . $transactionId . PHP_EOL;
+                $comment = __('PlatiOnline refused, Transaction code: ');
+				break;
             case self::PO_EXPIRED:
-                return __('PlatiOnline expired, Transaction code: ') . $transactionId . PHP_EOL;
+                $comment = __('PlatiOnline expired, Transaction code: ');
+				break;
             case self::PO_AUTH_ERROR:
-                return __('PlatiOnline error, Transaction code: ') . $transactionId . PHP_EOL;
+                $comment = __('PlatiOnline error, Transaction code: ');
+				break;
             case self::PO_PAYMENT_ONHOLD:
-                return __('PlatiOnline on hold, Transaction code: ') . $transactionId . PHP_EOL;
+                $comment = __('PlatiOnline on hold, Transaction code: ');
+				break;
         }
+		
+		$comment .= $transactionId;
+		if(isset($suffix)) $comment .= $suffix;
+		$comment .= PHP_EOL;
+		return $comment;
     }
 
     /**
@@ -728,7 +956,7 @@ class Payment extends PaymentAbstractMethod
         }
 */
         return true;
-        return parent::isAvailable($quote);
+        //return parent::isAvailable($quote);
     }
 
     /**
@@ -743,5 +971,15 @@ class Payment extends PaymentAbstractMethod
             return false;
         }
 */        return true;
+    }
+
+    /*public function getConfigPaymentAction()
+    {
+	return self::ACTION_AUTHORIZE;
+    }*/
+
+    public function getOrderPlaceRedirectUrl()
+    {
+        return "plationline/payment/redirect/";
     }
 }

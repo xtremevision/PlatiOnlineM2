@@ -13,8 +13,7 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="2columns-left" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
      <body>
         <referenceContainer name="content">
-            <block cacheable="false" class="Xtreme\PlatiOnline\Block\Payment\Redirect" name="plationline_redirect" template="plationline/redirect.phtml">
-            </block>
+            <block cacheable="false" class="Xtreme\PlatiOnline\Block\Payment\Redirect" name="redirect-Block" template="plationline/redirect.phtml"/>
         </referenceContainer>
     </body>
 </page>

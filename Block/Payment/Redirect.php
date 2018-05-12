@@ -25,4 +25,16 @@ class Redirect extends BaseBlock
     {
         return $this->paymentApi->getLastRedirect();
     }
+
+    /*public function getOrder()
+    {
+	echo $this->checkoutSession->getLastRealOrderId();
+	exit;
+	
+	return $this->_orderFactory->create()->loadByIncrementId(
+            $this->_checkoutSession->getLastRealOrderId()
+        );
+
+    }*/
+
 }

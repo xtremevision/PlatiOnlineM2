@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © 2016 Magento. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+	<!--
+	<referenceBlock name="order.status" remove="true"/>
+        <referenceContainer name="content">
+            <block class="Xtreme\Plationline\Block\Sales\Order\View" name="custom.order.status" template="Xtreme_PlatiOnline::order/order_status.phtml"/>
+        </referenceContainer>
+	-->
+
+	<referenceBlock name="order.status">
+            <action method="setTemplate">
+                <argument name="template" xsi:type="string">Xtreme_PlatiOnline::order/order_status.phtml</argument>
+            </action>
+        </referenceBlock>
+    </body>
+</page>

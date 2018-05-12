@@ -132,7 +132,8 @@ class PO5
         $parsedResponse = ['PO_AUTH_URL_RESPONSE' => $this->array_change_key_case_recursive(json_decode(json_encode((array)$xml), true))];
 
         if ($parsedResponse['PO_AUTH_URL_RESPONSE']['PO_ERROR_CODE'] == 1) {
-            throw new \Exception('<b>ERROR</b>: Raspunsul serverului PO este ' . $parsedResponse['PO_AUTH_URL_RESPONSE']['PO_ERROR_REASON'] . '!');
+            //throw new \Exception('<b>ERROR</b>: Raspunsul serverului PO este ' . $parsedResponse['PO_AUTH_URL_RESPONSE']['PO_ERROR_REASON'] . '!');
+            return $parsedResponse['PO_AUTH_URL_RESPONSE'];
         } else {
             $redirect_url = $parsedResponse['PO_AUTH_URL_RESPONSE']['PO_REDIRECT_URL'];
             if (isset($redirect_url) && !empty($redirect_url)) {
