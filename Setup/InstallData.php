@@ -69,7 +69,9 @@ class InstallData implements InstallDataInterface
             'payment_refused_plationline' => __('Refused PO'),
             'expired30_plationline' => __('Expired PO'),
             'error_plationline' => __('Error PO'),
-            'onhold_plationline' => __('On Hold PO')
+            'onhold_plationline' => __('On Hold PO'),
+            'timeoutccpage_plationline' => __('Timeout CC Page PO'),
+            'abandonedccpage_plationline' => __('Abandoned CC Page PO')
         ];
 
         foreach ($statuses as $code => $info) {
@@ -84,7 +86,13 @@ class InstallData implements InstallDataInterface
                 'visible_on_front' => true,
             ],
             'pending_payment' => [
-                'statuses' => ['pending_settled_plationline', 'pending_credited_plationline', 'credited_plationline'],
+                'statuses' => [
+		    'pending_settled_plationline',
+		    'pending_credited_plationline',
+		    'credited_plationline',
+		    'timeoutccpage_plationline',
+		    'abandonedccpage_plationline'
+		],
                 'visible_on_front' => true,
             ],
             'completed' => [

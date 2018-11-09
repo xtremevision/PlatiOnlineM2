@@ -44,6 +44,8 @@ class Payment extends PaymentAbstractMethod
     const PO_EXPIRED = 9;
     const PO_AUTH_ERROR = 10;
     const PO_PAYMENT_ONHOLD = 13;
+    const PO_TIMEOUT_CC_PAGE = 16;
+    const PO_ABANDONED_CC_PAGE = 17;
 
     /* Plationline credits response statuses */
     const PO_CREDIT_CREDITING = 1;
@@ -473,16 +475,37 @@ class Payment extends PaymentAbstractMethod
 		
         $statusCode = $this->_queryResponse['ORDER']['TRANZACTION']['STATUS_FIN1']['CODE'];
 
-        if ($statusCode == self::PO_AUTHORIZED) {
-            if ($this->_order->getState() != \Magento\Sales\Model\Order::STATE_PROCESSING) {
+        if ($statusCode == self::PO_AUTHORIZED)
+	{
+            if ($this->_order->getState() != \Magento\Sales\Model\Order::STATE_PROCESSING)
+	    {
                 //$this->orderSender->send($order);
                 $this->_order->setAuthorized(true);
                 $this->_order->save();
             }
         }
-		/*else if (in_array($statusCode, [self::PO_CANCELED, self::PO_AUTH_REFUSED])) {
-            $this->_order->cancel()->save();
-        }*/
+	else if (in_array($statusCode, [self::PO_TIMEOUT_CC_PAGE, self::PO_ABANDONED_CC_PAGE]))
+	{
+	    $stateName = $this->getPOStateName($statusCode, null);
+	    $poComment = $this->getPOComment($statusCode, null, $this->_transaction_id, ' (RELAY)') ;
+    	    $this->logger->debug(array("Timeout or Abandoned: " => $poComment), null, true);
+	    $this->_order->addStatusToHistory(
+        	$stateName,
+        	$poComment
+    	    );
+            $this->_order->save();
+        }
+        else if ($statusCode == self::PO_AUTH_REFUSED)
+	{
+	    $stateName = $this->getPOStateName($statusCode, null);
+	    $poComment = $this->getPOComment($statusCode, null, $this->_transaction_id, ' (RELAY)') ;
+    	    $this->logger->debug(array("PO Declined: " => $poComment), null, true);
+	    $this->_order->addStatusToHistory(
+        	$stateName,
+        	$poComment
+    	    );
+            $this->_order->save();
+	}
 		
         //$this->_handleAuthorization();
 		if($statusCode == self::PO_AUTHORIZED)
@@ -550,11 +573,11 @@ class Payment extends PaymentAbstractMethod
         $this->_order = $this->orderFactory->create()->loadByIncrementId($authData['F_ORDER_NUMBER']);
         $this->_transaction_id = $authData['X_TRANS_ID'];		
         $statusCode = $authData['X_RESPONSE_CODE'];
-		$stateName = $this->getPOStateName($statusCode, null);
-		$poComment = $this->getPOComment($statusCode, null, $this->_transaction_id, ' (RELAY)') ;
-		$this->logger->debug(array("processReturn statename: " => $stateName, "poComment" => $poComment), null, true);
+	$stateName = $this->getPOStateName($statusCode, null);
+	$poComment = $this->getPOComment($statusCode, null, $this->_transaction_id, ' (RELAY)') ;
+	$this->logger->debug(array("processReturn statename: " => $stateName, "poComment" => $poComment), null, true);
 		
-		$this->_order->addStatusToHistory(
+	$this->_order->addStatusToHistory(
             $stateName,
             $poComment
         );
@@ -833,6 +856,10 @@ class Payment extends PaymentAbstractMethod
                 return 'error_plationline';
             case self::PO_PAYMENT_ONHOLD:
                 return 'onhold_plationline';
+	    case self::PO_TIMEOUT_CC_PAGE:
+                return 'timeoutccpage_plationline';
+	    case self::PO_ABANDONED_CC_PAGE;
+		return 'abandonedccpage_plationline';
         }
     }
 
@@ -891,6 +918,12 @@ class Payment extends PaymentAbstractMethod
 				break;
             case self::PO_PAYMENT_ONHOLD:
                 $comment = __('PlatiOnline on hold, Transaction code: ');
+				break;
+	    case self::PO_TIMEOUT_CC_PAGE:
+                $comment = __('PlatiOnline timeout payment page, Transaction code: ');
+				break;
+	    case self::PO_ABANDONED_CC_PAGE;
+                $comment = __('PlatiOnline abandoned cart, Transaction code: ');
 				break;
         }
 		
